@@ -167,27 +167,27 @@ const reverseDayMapping = Object.fromEntries(
 function generateNewWeekData(week) {
     const startDate = new Date('2024-08-26');
     startDate.setDate(startDate.getDate() + (week - 1) * 7);
-
+    
     const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
     const newWeekDays = [];
-
+    
     for (let i = 0; i < days.length; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         newWeekDays.push(`${days[i]} ${currentDate.getDate()}`);
     }
-
+    
+    // Initialize schedule using day letters
     const schedule = {};
-    newWeekDays.forEach(day => {
-        schedule[day] = [];
+    Object.keys(dayMapping).forEach(dayLetter => {
+        schedule[dayLetter] = [];
     });
-
+    
     return {
         days: newWeekDays,
         schedule: schedule
     };
 }
-
 /**
  * Display the planner with the given data.
  * @param {Object} data - The week data.
@@ -274,6 +274,22 @@ function addCellClickListener(cell, dayLetter, period, data) {
                 if (notes) {
                     const day = dayMapping[dayLetter];
                     createOrUpdateEvent(dayLetter, period, subject, notes, data);
+
+                    // Ask if the event should be duplicated to the next period
+                    UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
+                        .then(() => {
+                            // Duplicate to the next period
+                            const nextPeriod = period + 1;
+                            console.log(dayLetter);
+                            console.log(period);
+                            console.log(nextPeriod);
+                            if (nextPeriod <= 11) { // Assuming there are 11 periods
+                                copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
+                            }
+                        })
+                        .catch(() => {
+                            // Do nothing if the user cancels
+                        });
                 } else {
                     throw new Error('No notes provided');
                 }
@@ -283,6 +299,7 @@ function addCellClickListener(cell, dayLetter, period, data) {
             });
     });
 }
+
 
 /**
  * Prompt the user to select the subject using a Franken UI select dropdown with optgroups.
@@ -298,15 +315,19 @@ function selectSubject() {
             },
             {
                 label: 'Sciences',
-                options: ['Mathématiques', 'Informatique', 'Physique', 'Biologie', 'Chimie']
+                options: ['Math', 'Info', 'Physique', 'Bio', 'Chimie']
             },
             {
                 label: 'Langues',
                 options: ['Français', 'Allemand', 'Italien', 'Anglais', 'Espagnol', 'Latin', 'Grec']
             },
             {
+                label: 'Général',
+                options: ['Histoire', 'Géo', 'Droit', 'Éco', 'Sport']
+            },
+            {
                 label: 'Arts',
-                options: ['Musique', 'Arts Plastiques', 'Théâtre']
+                options: ['Arts visuels', "Musique"]
             }
         ];
 
@@ -323,8 +344,8 @@ function selectSubject() {
                     `).join('')}
                 </select>
                 <p class="uk-text-right">
-                    <button class="uk-button uk-button-default uk-modal-close" type="button">Annuler</button>
-                    <button class="uk-button uk-button-primary" type="button">Confirmer</button>
+                    <button class="uk-button uk-button-default uk-modal-close drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]" type="button">Annuler</button>
+                    <button class="uk-button uk-button-primary drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]" type="button">Confirmer</button>
                 </p>
             </div>
         `;
@@ -358,6 +379,65 @@ function selectSubject() {
  */
 function promptForNotes() {
     return UIkit.modal.prompt('Entrez des notes pour l\'événement:', '');
+}
+/**
+ * Copy the event data from one cell to another.
+ * @param {string} copyFrom - The ID of the cell to copy from.
+ * @param {string} copyTo - The ID of the cell to copy to.
+ * @param {Object} data - The week data.
+ */
+function copyCell(copyFrom, copyTo, data) {
+    console.log("copyCell function triggered");
+    
+    // Extract day letters and periods from the cell IDs
+    const fromDayLetter = copyFrom[0];
+    const fromPeriod = parseInt(copyFrom.slice(1), 10);
+    const toDayLetter = copyTo[0];
+    const toPeriod = parseInt(copyTo.slice(1), 10);
+    
+    console.log(`Copying from ${fromDayLetter}${fromPeriod} to ${toDayLetter}${toPeriod}`);
+    console.log("Current schedule:", data.schedule);
+    
+    // Find the event in the source cell
+    const fromDay = data.schedule[fromDayLetter];
+    if (!fromDay) {
+        console.error(`No schedule found for day ${fromDayLetter}`);
+        return;
+    }
+    
+    const eventToCopy = fromDay.find(e => e.period === fromPeriod);
+    if (!eventToCopy) {
+        console.error(`No event found for period ${fromPeriod} on day ${fromDayLetter}`);
+        return;
+    }
+    
+    console.log("Event to copy:", eventToCopy);
+    
+    // Create or update the event in the target cell
+    if (!data.schedule[toDayLetter]) {
+        data.schedule[toDayLetter] = [];
+    }
+    
+    // Remove any existing event in the target period
+    const existingEventIndex = data.schedule[toDayLetter].findIndex(e => e.period === toPeriod);
+    if (existingEventIndex !== -1) {
+        data.schedule[toDayLetter].splice(existingEventIndex, 1);
+    }
+    
+    // Add the copied event
+    const newEvent = {
+        period: toPeriod,
+        subject: eventToCopy.subject,
+        notes: eventToCopy.notes
+    };
+    
+    data.schedule[toDayLetter].push(newEvent);
+    
+    // Save the updated data and refresh the display
+    saveWeekData(currentWeek, data);
+    displayPlanner(data);
+    
+    console.log(`Event copied successfully to ${toDayLetter}${toPeriod}`);
 }
 
 /**

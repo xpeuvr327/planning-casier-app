@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
             submitButton.classList.add('bg-gray-500', 'cursor-not-allowed');
             submitButton.disabled = true;
         }
-            
+
     }
 
     // Add event listeners to radio buttons
@@ -33,4 +33,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial check to set the button state
     updateSubmitButton();
+
+    // Function to update localStorage with the selected radio button value
+    function updateLocalStorage() {
+        const selectedValue = document.querySelector('input[name="custom-radio"]:checked');
+        if (selectedValue) {
+            localStorage.setItem('collegeYear', selectedValue.value);
+        } else {
+            localStorage.removeItem('collegeYear');
+        }
+    }
+
+    // Add event listeners to radio buttons
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', updateLocalStorage);
+    });
 });

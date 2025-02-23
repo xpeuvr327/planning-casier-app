@@ -1,22 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YAKDMC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>YAKDMC</h1>
-    <p>Qu'y a t-il dans mon casier (YAKDMC) est une appli qui permet de garder une trace de ce qu'il y a à utiliser. Il offre une plénitude de fonctionnalités, notemment:</p>
-    <ul>
-        <li>gratuit. c'est complètement gratuit</li>
-        <li>connectivité avec un planning</li>
-        <li>conçu par un élève, pour les élèves. il répond avant tout aux besoins des élèves du secondaire I jusqu'au tertiare, tout en étant parfaitement utilisable par toute autre personne.</li>
-        <li>100% local. vous gardez vos données</li>
-    </ul>
-    <p>Qu'attendez-vous?
-        <a href="onboard.html">commencez dès maintenant</a> <br>
-        <a href="solutions.html">explorez nos solutions</a><br>
-        vous voulez en savoir plus? <a href="pitch.html">le pitch plus complet</a></p>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
+    <div class="absolute top-4 left-4 z-10">
+        <a href="index.html" class="inline-block">
+          <div class="text-2xl font-bold text-gray-800 hover:text-blue-500 transition-colors duration-300 bg-white shadow-md p-4 rounded-lg">
+            YAKDMC
+          </div>
+        </a>
+    </div>
+    <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+        <h1 class="text-3xl font-bold mb-4 text-center">YAKDMC</h1>
+        <p class="mb-4">
+            Qu'y a t-il dans mon casier (YAKDMC) est une appli qui permet de garder une trace de ce qu'il y a dans votre casier. Elle offre une plénitude de fonctionnalités, notamment :
+        </p>
+        <ul class="mb-6 space-y-2">
+            <li class="flex items-center"><span class="mr-2">&#x2705;</span>Gratuit : c'est complètement gratuit</li>
+            <li class="flex items-center"><span class="mr-2">&#x2705;</span>Connectivité avec un planning</li>
+            <li class="flex items-center"><span class="mr-2">&#x2705;</span>Conçu par un élève, pour les élèves. Il répond avant tout aux besoins des élèves du secondaire I jusqu'au tertiaire, tout en étant parfaitement utilisable par toute autre personne.</li>
+            <li class="flex items-center"><span class="mr-2">&#x2705;</span>100% local : vous gardez vos données</li>
+        </ul>
+        <div class="text-center space-y-2">
+            <p>Qu'attendez-vous ?</p>
+            <a href="onboard.html" class="block text-blue-500 hover:underline">Commencez dès maintenant</a>
+            <a href="solutions.html" class="block text-blue-500 hover:underline">Explorez nos solutions</a>
+            <p>Vous voulez en savoir plus ? <a href="pitch.html" class="text-blue-500 hover:underline">Le pitch plus complet</a></p>
+        </div>
+    </div>
 </body>
 </html>
