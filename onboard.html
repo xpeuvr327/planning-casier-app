@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page d'Accueil</title>
+    <link rel="stylesheet" href="onboard.css">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+<body>
+    <div class="relative size-32">
+        <a href="index.html" class="logo-link">
+            <div class="text-2xl font-bold text-gray-800 hover:text-blue-500 transition-colors duration-300 shadow-md p-4">
+                YAKDMC
+            </div>
+        </a>        
+    </div>
+
+    <div class="flex flex-col items-center justify-center min-h-screen">
+        <h1 class="text-3xl lg:text-5xl font-bold">Bienvenue</h1>
+        <p>Répondez à ces <span class="font-bold">courtes</span> questions avant de commencer</p>
+        <p>Les réponses sont uniquement stockées sur votre appareil. <a href="more-legal.html" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">(En savoir plus)</a></p>
+            <div class="custom-radio-group">
+                <h2>Veuillez sélectionner votre année de collège :</h1>
+                <label class="custom-radio-container">
+                  <input type="radio" name="custom-radio" value="1" />
+                  <span class="custom-radio-checkmark"></span>
+                  1<sup>ère</sup>&nbsp;année
+                </label>
+                <label class="custom-radio-container">
+                  <input type="radio" name="custom-radio" value="2" />
+                  <span class="custom-radio-checkmark"></span>
+                  2<sup>ème</sup>&nbsp;année
+                </label>
+                <label class="custom-radio-container">
+                  <input type="radio" name="custom-radio" value="3" />
+                  <span class="custom-radio-checkmark"></span>
+                  3<sup>ème</sup>&nbsp;année
+                </label>
+                <label class="custom-radio-container">
+                    <input type="radio" name="custom-radio" value="4" />
+                    <span class="custom-radio-checkmark"></span>
+                    4<sup>ème</sup>&nbsp;année
+                </label>
+                <label class="custom-radio-container">
+                    <input type="radio" name="custom-radio" value="0" />
+                    <span class="custom-radio-checkmark"></span>
+                   Je ne suis pas un élève
+                </label>
+                <button id="submit-btn" class="action-button bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 cursor-pointer">Soumettre</button>
+                <button id="skip-btn" class="nav-button secondary-button text-gray-500 underline px-4 rounded hover:text-gray-700 cursor-pointer">Passer</button>
+            </div>
+    </div>
+    <script src="onboard.js"></script>
+</body>
+</html>

@@ -145,6 +145,7 @@ function handleWeekDataError(week) {
         displayPlanner(newWeekData);
     }
 }
+
 const dayMapping = {
     a: 'Lundi',
     b: 'Mardi',
@@ -152,6 +153,7 @@ const dayMapping = {
     d: 'Jeudi',
     e: 'Vendredi'
 };
+
 // Reverse mapping for convenience
 const reverseDayMapping = Object.fromEntries(
     Object.entries(dayMapping).map(([key, value]) => [value, key])
@@ -238,13 +240,13 @@ function createTableData(table, data) {
             const dayLetter = reverseDayMapping[day.split(' ')[0]]; // ref as in "c1"
             const cell = document.createElement('td');
             cell.id = `${dayLetter}${i + 1}`;
-            if (data.schedule[day]) {
-                const event = data.schedule[day].find(e => e.period === i + 1);
+            if (data.schedule[dayLetter]) {
+                const event = data.schedule[dayLetter].find(e => e.period === i + 1);
                 if (event) {
                     cell.textContent = `${event.subject} - ${event.notes}`;
                 }
             }
-            addCellClickListener(cell, day, i + 1, data);
+            addCellClickListener(cell, dayLetter, i + 1, data);
             row.appendChild(cell);
         });
 
@@ -261,7 +263,7 @@ function createTableData(table, data) {
  */
 function addCellClickListener(cell, dayLetter, period, data) {
     cell.addEventListener('click', () => {
-        promptForSubject()
+        selectSubject()
             .then(subject => {
                 if (subject) {
                     return promptForNotes().then(notes => ({ subject, notes }));
@@ -271,7 +273,7 @@ function addCellClickListener(cell, dayLetter, period, data) {
             .then(({ subject, notes }) => {
                 if (notes) {
                     const day = dayMapping[dayLetter];
-                    createOrUpdateEvent(day, period, subject, notes, data);
+                    createOrUpdateEvent(dayLetter, period, subject, notes, data);
                 } else {
                     throw new Error('No notes provided');
                 }
@@ -283,12 +285,72 @@ function addCellClickListener(cell, dayLetter, period, data) {
 }
 
 /**
- * Prompt the user to enter the subject.
- * @returns {Promise<string>} - The subject entered by the user.
+ * Prompt the user to select the subject using a Franken UI select dropdown with optgroups.
+ * @returns {Promise<string>} - The subject selected by the user.
  */
-function promptForSubject() {
-    return UIkit.modal.prompt('Entrez la matière:', '');
+function selectSubject() {
+    return new Promise((resolve, reject) => {
+        // Define subjects with optgroups
+        const subjects = [
+            {
+                label:'Veuillez choisir une option',
+                options:['Veuillez choisir une option']
+            },
+            {
+                label: 'Sciences',
+                options: ['Mathématiques', 'Informatique', 'Physique', 'Biologie', 'Chimie']
+            },
+            {
+                label: 'Langues',
+                options: ['Français', 'Allemand', 'Italien', 'Anglais', 'Espagnol', 'Latin', 'Grec']
+            },
+            {
+                label: 'Arts',
+                options: ['Musique', 'Arts Plastiques', 'Théâtre']
+            }
+        ];
+
+        // Create a unique modal container
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = `
+            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+                <h2 class="uk-modal-title">Choisissez la matière</h2>
+                <select class="uk-select">
+                    ${subjects.map(group => `
+                        <optgroup label="${group.label}">
+                            ${group.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                        </optgroup>
+                    `).join('')}
+                </select>
+                <p class="uk-text-right">
+                    <button class="uk-button uk-button-default uk-modal-close" type="button">Annuler</button>
+                    <button class="uk-button uk-button-primary" type="button">Confirmer</button>
+                </p>
+            </div>
+        `;
+
+        // Use UIkit to show the modal
+        const modal = UIkit.modal(modalContainer, { bgClose: false, center: true });
+        modal.show();
+
+        // Add event listener to the confirm button
+        modalContainer.querySelector('.uk-button-primary').addEventListener('click', () => {
+            const selectElement = modalContainer.querySelector('.uk-select');
+            const subject = selectElement.value;
+            if (subject) {
+                resolve(subject);
+            } else {
+                reject(new Error('No subject selected'));
+            }
+            modal.hide();
+        });
+
+        // Clean up the modal from the DOM after hiding
+        modal.$destroy = true;
+    });
 }
+
+
 
 /**
  * Prompt the user to enter notes for the event.
@@ -306,19 +368,19 @@ function promptForNotes() {
  * @param {string} notes - The notes for the event.
  * @param {Object} data - The week data.
  */
-function createOrUpdateEvent(day, period, subject, notes, data) {
+function createOrUpdateEvent(dayLetter, period, subject, notes, data) {
     const event = { period, subject, notes };
 
-    if (!data.schedule[day]) {
-        data.schedule[day] = [];
+    if (!data.schedule[dayLetter]) {
+        data.schedule[dayLetter] = [];
     }
 
-    const eventIndex = data.schedule[day].findIndex(e => e.period === event.period);
+    const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === event.period);
 
     if (eventIndex !== -1) {
-        data.schedule[day][eventIndex] = event;
+        data.schedule[dayLetter][eventIndex] = event;
     } else {
-        data.schedule[day].push(event);
+        data.schedule[dayLetter].push(event);
     }
 
     saveWeekData(currentWeek, data);
@@ -422,6 +484,7 @@ function handleProfileSelection() {
         loadWeek(currentWeek);
     }
 }
+
 /**
  * Download the updated JSON data for the current week.
  */
