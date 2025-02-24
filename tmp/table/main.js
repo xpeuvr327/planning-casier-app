@@ -19,7 +19,13 @@ function initializeApp() {
     document.getElementById('prevWeek').addEventListener('click', navigateToPreviousWeek);
     document.getElementById('nextWeek').addEventListener('click', navigateToNextWeek);
     document.getElementById('uploadJson').addEventListener('change', handleFileUpload);
+    document.getElementById('viewAllTasks').addEventListener('click', showAllTasks);
     document.getElementById('downloadUpdatedJson').addEventListener('click', downloadUpdatedJson);
+    document.querySelector('.custom-file-upload').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            document.getElementById('uploadJson').click();
+        }
+    });
 }
 
 /**
@@ -286,6 +292,296 @@ function createTableData(table, data) {
     addHomeworkBadgeListeners();
 }
 
+/**
+ * Show all homework tasks from all weeks
+ */
+function showAllTasks() {
+    // Gather all tasks from session storage
+    const allTasks = getAllHomeworkTasks();
+    
+    // Create modal with tasks
+    displayTasksModal(allTasks);
+}
+
+/**
+ * Gather all homework tasks from all weeks in session storage
+ * @returns {Array} Array of homework tasks with week, day, and period information
+ */
+function getAllHomeworkTasks() {
+    const allTasks = [];
+    
+    // Loop through all items in session storage
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        
+        // Check if the key is a week data item
+        if (key && key.startsWith('week')) {
+            try {
+                const weekNum = parseInt(key.replace('week', ''), 10);
+                const weekData = JSON.parse(sessionStorage.getItem(key));
+                
+                // Process the schedule for this week
+                if (weekData && weekData.schedule) {
+                    // Loop through each day in the schedule
+                    for (const dayLetter in weekData.schedule) {
+                        if (weekData.schedule.hasOwnProperty(dayLetter)) {
+                            const dayName = dayMapping[dayLetter];
+                            
+                            // Loop through events for this day
+                            weekData.schedule[dayLetter].forEach(event => {
+                                // Check if the event has homework
+                                if (event.homework && event.homework.length > 0) {
+                                    // Get the actual day (e.g., "Lundi 26")
+                                    let fullDayName = "";
+                                    if (weekData.days && weekData.days.length > 0) {
+                                        // Find the day that starts with the day name
+                                        const dayIndex = Object.values(dayMapping).indexOf(dayName);
+                                        if (dayIndex !== -1 && dayIndex < weekData.days.length) {
+                                            fullDayName = weekData.days[dayIndex];
+                                        }
+                                    }
+                                    
+                                    // Add each homework task
+                                    event.homework.forEach(hw => {
+                                        allTasks.push({
+                                            id: hw.id,
+                                            title: hw.title,
+                                            content: hw.content,
+                                            subject: event.subject,
+                                            week: weekNum,
+                                            day: fullDayName || dayName,
+                                            dayLetter: dayLetter,
+                                            period: event.period
+                                        });
+                                    });
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Error processing ${key}:`, error);
+            }
+        }
+    }
+    
+    // Sort tasks by week, then by day
+    allTasks.sort((a, b) => {
+        if (a.week !== b.week) {
+            return a.week - b.week;
+        }
+        
+        // Same week, sort by day (using the order in dayMapping)
+        const dayOrderA = Object.keys(dayMapping).indexOf(a.dayLetter);
+        const dayOrderB = Object.keys(dayMapping).indexOf(b.dayLetter);
+        
+        return dayOrderA - dayOrderB;
+    });
+    
+    return allTasks;
+}
+
+/**
+ * Display the tasks in a modal
+ * @param {Array} tasks - Array of homework tasks
+ */
+function displayTasksModal(tasks) {
+    // Group tasks by week
+    const tasksByWeek = {};
+    tasks.forEach(task => {
+        if (!tasksByWeek[task.week]) {
+            tasksByWeek[task.week] = [];
+        }
+        tasksByWeek[task.week].push(task);
+    });
+    
+    // Create modal content
+    const modalContainer = document.createElement('div');
+    
+    let modalContent = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical" style="max-width: 800px;">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <h2 class="uk-modal-title">Tous les devoirs</h2>
+    `;
+    
+    // Check if there are any tasks
+    if (Object.keys(tasksByWeek).length === 0) {
+        modalContent += `
+            <div class="uk-alert uk-alert-primary">
+                <p>Aucun devoir trouvé. Ajoutez des devoirs dans le planning pour les voir ici.</p>
+            </div>
+        `;
+    } else {
+        // Add tasks grouped by week
+        modalContent += `<div uk-filter="target: .tasks-grid">
+            <ul class="uk-subnav uk-subnav-pill">
+                <li class="uk-active" uk-filter-control><a href="#">Tous</a></li>
+        `;
+        
+        // Create filter buttons for each week
+        Object.keys(tasksByWeek).sort((a, b) => parseInt(a) - parseInt(b)).forEach(week => {
+            modalContent += `<li uk-filter-control="filter: [data-week='${week}']"><a href="#">Semaine ${week}</a></li>`;
+        });
+        
+        modalContent += `</ul>
+            <div class="tasks-grid uk-child-width-1-1" uk-grid>`;
+        
+        // Add all tasks with appropriate filter attributes
+        tasks.forEach(task => {
+            modalContent += `
+                <div data-week="${task.week}">
+                    <div class="uk-card uk-card-default uk-card-hover uk-margin-small">
+                        <div class="uk-card-header uk-padding-small">
+                            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                                <div class="uk-width-expand">
+                                    <h3 class="uk-card-title uk-margin-remove-bottom">${task.title}</h3>
+                                    <p class="uk-text-meta uk-margin-remove-top">
+                                        ${task.subject} - Semaine ${task.week} - ${task.day}
+                                    </p>
+                                </div>
+                                <div class="uk-width-auto">
+                                    <button class="uk-button uk-button-small uk-button-primary view-task" 
+                                        data-week="${task.week}" 
+                                        data-day="${task.dayLetter}" 
+                                        data-period="${task.period}" 
+                                        data-id="${task.id}">
+                                        Voir détails
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="uk-card-body uk-padding-small">
+                            <div class="uk-text-small">${task.content.substring(0, 100)}${task.content.length > 100 ? '...' : ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        modalContent += `</div></div>`;
+    }
+    
+    modalContent += `</div>`;
+    modalContainer.innerHTML = modalContent;
+    
+    // Create the modal
+    const modal = UIkit.modal(modalContainer, { bgClose: true, center: true });
+    modal.show();
+    
+    // Add event listeners for the view buttons
+    const viewButtons = modalContainer.querySelectorAll('.view-task');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const weekNum = button.getAttribute('data-week');
+            const dayLetter = button.getAttribute('data-day');
+            const period = parseInt(button.getAttribute('data-period'), 10);
+            const homeworkId = button.getAttribute('data-id');
+            
+            // Load week data for this task
+            const weekData = JSON.parse(sessionStorage.getItem(`week${weekNum}`));
+            if (weekData && weekData.schedule && weekData.schedule[dayLetter]) {
+                const event = weekData.schedule[dayLetter].find(e => e.period === period);
+                if (event && event.homework) {
+                    const homework = event.homework.find(hw => hw.id === homeworkId);
+                    if (homework) {
+                        // Hide the current modal
+                        modal.hide();
+                        
+                        // Show detailed view for this homework
+                        showTaskDetailModal(homework, event, weekNum, dayLetter, period, weekData);
+                    }
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Show a detailed view of a homework task
+ * @param {Object} homework - The homework object
+ * @param {Object} event - The event the homework belongs to
+ * @param {number} weekNum - The week number
+ * @param {string} dayLetter - The day letter
+ * @param {number} period - The period
+ * @param {Object} weekData - The week data
+ */
+function showTaskDetailModal(homework, event, weekNum, dayLetter, period, weekData) {
+    const dayName = dayMapping[dayLetter];
+    
+    // Find full day name
+    let fullDayName = "";
+    if (weekData.days && weekData.days.length > 0) {
+        // Find the day that starts with the day name
+        const dayIndex = Object.values(dayMapping).indexOf(dayName);
+        if (dayIndex !== -1 && dayIndex < weekData.days.length) {
+            fullDayName = weekData.days[dayIndex];
+        }
+    }
+    
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <h2 class="uk-modal-title">${homework.title}</h2>
+            <div class="uk-grid-small" uk-grid>
+                <div class="uk-width-1-2">
+                    <p><strong>Matière:</strong> ${event.subject}</p>
+                </div>
+                <div class="uk-width-1-2">
+                    <p><strong>Semaine:</strong> ${weekNum}</p>
+                </div>
+                <div class="uk-width-1-2">
+                    <p><strong>Jour:</strong> ${fullDayName || dayName}</p>
+                </div>
+                <div class="uk-width-1-2">
+                    <p><strong>Période:</strong> ${period}</p>
+                </div>
+            </div>
+            <div class="uk-margin">
+                <div class="uk-card uk-card-default uk-card-body">
+                    ${homework.content}
+                </div>
+            </div>
+            <div class="uk-margin-top uk-text-right">
+                <button id="btn-edit-task" class="uk-button uk-button-primary">Modifier</button>
+                <button id="btn-delete-task" class="uk-button uk-button-danger">Supprimer</button>
+                <button id="btn-back-to-tasks" class="uk-button uk-button-default">Retour à la liste</button>
+                <button class="uk-button uk-button-default uk-modal-close">Fermer</button>
+            </div>
+        </div>
+    `;
+    
+    const modal = UIkit.modal(modalContainer, { bgClose: true, center: true });
+    modal.show();
+    
+    // Add event listeners for the buttons
+    modalContainer.querySelector('#btn-edit-task').addEventListener('click', () => {
+        modal.hide();
+        editHomework(homework, dayLetter, period, weekData, event, () => {
+            // After editing, return to the tasks view
+            showAllTasks();
+        });
+    });
+    
+    modalContainer.querySelector('#btn-delete-task').addEventListener('click', () => {
+        modal.hide();
+        UIkit.modal.confirm('Êtes-vous sûr de vouloir supprimer ce devoir?')
+            .then(() => {
+                deleteHomework(homework.id, dayLetter, period, weekData);
+                // After deleting, return to the tasks view
+                showAllTasks();
+            })
+            .catch(() => {
+                // User canceled the deletion, return to the tasks view
+                showAllTasks();
+            });
+    });
+    
+    modalContainer.querySelector('#btn-back-to-tasks').addEventListener('click', () => {
+        modal.hide();
+        showAllTasks();
+    });
+}
 
 /**
  * Add click listeners to all homework badges
@@ -643,14 +939,15 @@ function deleteHomework(homeworkId, dayLetter, period, data) {
 }
 
 /**
- * Edit an existing homework
+ * Modified version of editHomework to support a callback after editing
  * @param {Object} homework - The homework object
  * @param {string} dayLetter - The letter representing the day of the week
  * @param {number} period - The period of the day
  * @param {Object} data - The week data
  * @param {Object} event - The event object
+ * @param {Function} callback - Optional callback function to execute after editing
  */
-function editHomework(homework, dayLetter, period, data, event) {
+function editHomework(homework, dayLetter, period, data, event, callback) {
     // Create a modal for editing homework
     const modalContainer = document.createElement('div');
     modalContainer.innerHTML = `
@@ -697,10 +994,16 @@ function editHomework(homework, dayLetter, period, data, event) {
                     data.schedule[dayLetter][eventIndex].homework[homeworkIndex].content = content;
                     
                     // Save and refresh
-                    saveWeekData(currentWeek, data);
+                    const weekNumber = parseInt(currentWeek, 10);
+                    saveWeekData(weekNumber, data);
                     displayPlanner(data);
                     
                     modal.hide();
+                    
+                    // Execute callback if provided
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
                 }
             }
         } else {
@@ -762,7 +1065,7 @@ function selectSubject(defaultSubject = '') {
             },
             {
                 label: 'Arts',
-                options: ['Arts visuels', "Musique"]
+                options: ['Arts visuels','Histoire de l\'art', "Musique"]
             }
         ];
 
