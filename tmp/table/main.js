@@ -204,7 +204,6 @@ function displayPlanner(data) {
     createTableData(table, data);
 
     if (data.timeScheme) {
-        console.log("ff");
         fetchTimeScheme(data.timeScheme);
     }
 }
@@ -235,7 +234,17 @@ function createTableHeaders(table, days) {
  * @param {Object} data - The week data
  */
 function createTableData(table, data) {
-    for (let i = 0; i < data.totalHours; i++) {
+    let totalHours = data.totalHours;
+        
+    if (totalHours === undefined || totalHours === null || isNaN(totalHours)) {
+        totalHours = 11; 
+        console.log("ff");
+        console.log(totalHours);
+    } else {
+        
+        totalHours = Math.floor(Number(totalHours));
+    }
+    for (let i = 0; i < totalHours; i++) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
         cell.textContent = `Heure ${i + 1}`;
@@ -334,6 +343,12 @@ function addCellClickListener(cell, dayLetter, period, data) {
  * @param {number} period - The period of the day
  * @param {Object} data - The week data
  */
+/**
+ * Handle creating a new event
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ */
 function createNewEvent(dayLetter, period, data) {
     selectSubject()
         .then(subject => {
@@ -346,18 +361,29 @@ function createNewEvent(dayLetter, period, data) {
             if (notes) {
                 createOrUpdateEvent(dayLetter, period, subject, notes, data);
 
-                // Ask if the event should be duplicated to the next period
-                UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
-                    .then(() => {
-                        // Duplicate to the next period
-                        const nextPeriod = period + 1;
-                        if (nextPeriod <= data.totalHours) {
-                            copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
-                        }
-                    })
-                    .catch(() => {
-                        // Do nothing if the user cancels
-                    });
+                // Check if the period is an odd number and not 5 or 11
+                const isOddPeriod = period % 2 !== 0 && period !== 5 && period !== 11;
+
+                if (isOddPeriod) {
+                    // Automatically duplicate to the next period
+                    const nextPeriod = period + 1;
+                    if (nextPeriod <= data.totalHours) {
+                        copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
+                    }
+                } else {
+                    // Ask if the event should be duplicated to the next period
+                    UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
+                        .then(() => {
+                            // Duplicate to the next period
+                            const nextPeriod = period + 1;
+                            if (nextPeriod <= data.totalHours) {
+                                copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
+                            }
+                        })
+                        .catch(() => {
+                            // Do nothing if the user cancels
+                        });
+                }
             } else {
                 throw new Error('No notes provided');
             }
@@ -366,6 +392,7 @@ function createNewEvent(dayLetter, period, data) {
             console.error(error.message);
         });
 }
+
 /**
  * Add homework to an existing event
  * @param {string} dayLetter - The letter representing the day of the week
