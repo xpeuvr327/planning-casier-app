@@ -125,7 +125,7 @@ function loadWeek(week) {
  * @returns {Promise} - The promise that resolves to the week data.
  */
 function fetchWeekData(week) {
-    return fetch(`weeks/week${week < 10 ? '0' + week : week}.json`)
+    return fetch(`data/week${week < 10 ? '0' + week : week}.json`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);
@@ -167,27 +167,31 @@ const reverseDayMapping = Object.fromEntries(
 function generateNewWeekData(week) {
     const startDate = new Date('2024-08-26');
     startDate.setDate(startDate.getDate() + (week - 1) * 7);
-    
+
     const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
     const newWeekDays = [];
-    
+
     for (let i = 0; i < days.length; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         newWeekDays.push(`${days[i]} ${currentDate.getDate()}`);
     }
-    
+
     // Initialize schedule using day letters
     const schedule = {};
     Object.keys(dayMapping).forEach(dayLetter => {
         schedule[dayLetter] = [];
     });
-    
+
     return {
         days: newWeekDays,
-        schedule: schedule
+        schedule: schedule,
+        totalHours: 11, // Add default total hours
+        timeScheme: "default" // Add default time scheme
     };
 }
+
+
 /**
  * Display the planner with the given data.
  * @param {Object} data - The week data.
@@ -200,6 +204,7 @@ function displayPlanner(data) {
     createTableData(table, data);
 
     if (data.timeScheme) {
+        console.log("ff");
         fetchTimeScheme(data.timeScheme);
     }
 }
@@ -225,12 +230,12 @@ function createTableHeaders(table, days) {
 }
 
 /**
- * Create the table data.
- * @param {HTMLTableElement} table - The table element.
- * @param {Object} data - The week data.
+ * Create the table data with support for homework display
+ * @param {HTMLTableElement} table - The table element
+ * @param {Object} data - The week data
  */
 function createTableData(table, data) {
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < data.totalHours; i++) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
         cell.textContent = `Heure ${i + 1}`;
@@ -243,7 +248,22 @@ function createTableData(table, data) {
             if (data.schedule[dayLetter]) {
                 const event = data.schedule[dayLetter].find(e => e.period === i + 1);
                 if (event) {
-                    cell.textContent = `${event.subject} - ${event.notes}`;
+                    // Create the cell content
+                    let cellContent = `${event.subject} - ${event.notes}`;
+                    
+                    // Check if the event has homework
+                    if (event.homework && event.homework.length > 0) {
+                        cellContent += `<div class="uk-margin-small-top">`;
+                        event.homework.forEach(hw => {
+                            cellContent += `<span class="uk-badge uk-background-secondary homework-badge" 
+                                               data-day="${dayLetter}" 
+                                               data-period="${i+1}" 
+                                               data-id="${hw.id}">${hw.title}</span> `;
+                        });
+                        cellContent += `</div>`;
+                    }
+                    
+                    cell.innerHTML = cellContent;
                 }
             }
             addCellClickListener(cell, dayLetter, i + 1, data);
@@ -252,6 +272,39 @@ function createTableData(table, data) {
 
         table.appendChild(row);
     }
+    
+    // Add click listeners for homework badges
+    addHomeworkBadgeListeners();
+}
+
+
+/**
+ * Add click listeners to all homework badges
+ */
+function addHomeworkBadgeListeners() {
+    const badges = document.querySelectorAll('.homework-badge');
+    badges.forEach(badge => {
+        badge.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent the cell click event from firing
+            
+            const dayLetter = badge.getAttribute('data-day');
+            const period = parseInt(badge.getAttribute('data-period'), 10);
+            const homeworkId = badge.getAttribute('data-id');
+            
+            // Get the data from session storage
+            const data = JSON.parse(sessionStorage.getItem(`week${currentWeek}`));
+            
+            // Find the event
+            const event = data.schedule[dayLetter]?.find(e => e.period === period);
+            if (event && event.homework) {
+                // Find the homework
+                const homework = event.homework.find(hw => hw.id === homeworkId);
+                if (homework) {
+                    showHomeworkDetails(homework, dayLetter, period, data, event);
+                }
+            }
+        });
+    });
 }
 
 /**
@@ -263,55 +316,410 @@ function createTableData(table, data) {
  */
 function addCellClickListener(cell, dayLetter, period, data) {
     cell.addEventListener('click', () => {
-        selectSubject()
-            .then(subject => {
-                if (subject) {
-                    return promptForNotes().then(notes => ({ subject, notes }));
-                }
-                throw new Error('No subject provided');
-            })
-            .then(({ subject, notes }) => {
-                if (notes) {
-                    const day = dayMapping[dayLetter];
-                    createOrUpdateEvent(dayLetter, period, subject, notes, data);
-
-                    // Ask if the event should be duplicated to the next period
-                    UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
-                        .then(() => {
-                            // Duplicate to the next period
-                            const nextPeriod = period + 1;
-                            console.log(dayLetter);
-                            console.log(period);
-                            console.log(nextPeriod);
-                            if (nextPeriod <= 11) { // Assuming there are 11 periods
-                                copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
-                            }
-                        })
-                        .catch(() => {
-                            // Do nothing if the user cancels
-                        });
-                } else {
-                    throw new Error('No notes provided');
-                }
-            })
-            .catch(error => {
-                console.error(error.message);
-            });
+        const event = data.schedule[dayLetter]?.find(e => e.period === period);
+        if (event) {
+            // Cell is already populated, show options menu
+            showCellOptionsMenu(cell, dayLetter, period, data, event);
+        } else {
+            // Cell is not populated, create a new event
+            createNewEvent(dayLetter, period, data);
+        }
     });
 }
 
 
 /**
- * Prompt the user to select the subject using a Franken UI select dropdown with optgroups.
+ * Handle creating a new event
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ */
+function createNewEvent(dayLetter, period, data) {
+    selectSubject()
+        .then(subject => {
+            if (subject && subject !== 'Veuillez choisir une option') {
+                return promptForNotes().then(notes => ({ subject, notes }));
+            }
+            throw new Error('No subject provided or invalid selection');
+        })
+        .then(({ subject, notes }) => {
+            if (notes) {
+                createOrUpdateEvent(dayLetter, period, subject, notes, data);
+
+                // Ask if the event should be duplicated to the next period
+                UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
+                    .then(() => {
+                        // Duplicate to the next period
+                        const nextPeriod = period + 1;
+                        if (nextPeriod <= data.totalHours) {
+                            copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
+                        }
+                    })
+                    .catch(() => {
+                        // Do nothing if the user cancels
+                    });
+            } else {
+                throw new Error('No notes provided');
+            }
+        })
+        .catch(error => {
+            console.error(error.message);
+        });
+}
+/**
+ * Add homework to an existing event
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ * @param {Object} event - The existing event
+ */
+function addHomework(dayLetter, period, data, event) {
+    // Create a modal for adding homework
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <h2 class="uk-modal-title">Ajouter un devoir pour ${event.subject}</h2>
+            <form class="uk-form-stacked">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="homework-title">Titre</label>
+                    <div class="uk-form-controls">
+                        <input id="homework-title" class="uk-input" type="text" placeholder="Titre du devoir">
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="homework-content">Contenu</label>
+                    <div class="uk-form-controls">
+                        <textarea id="homework-content" class="uk-textarea" rows="5" placeholder="Détails du devoir"></textarea>
+                    </div>
+                </div>
+                <div class="uk-margin uk-text-right">
+                    <button type="button" class="uk-button uk-button-default uk-modal-close">Annuler</button>
+                    <button type="button" id="btn-save-homework" class="uk-button uk-button-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    const modal = UIkit.modal(modalContainer, { bgClose: false, center: true });
+    modal.show();
+    
+    // Add event listener for saving the homework
+    modalContainer.querySelector('#btn-save-homework').addEventListener('click', () => {
+        const title = modalContainer.querySelector('#homework-title').value.trim();
+        const content = modalContainer.querySelector('#homework-content').value.trim();
+        
+        if (title && content) {
+            // Generate a unique ID for this homework
+            const homeworkId = `hw_${Date.now()}`;
+            
+            // Create the homework object
+            const homework = {
+                id: homeworkId,
+                title: title,
+                content: content
+            };
+            
+            // Find the event in the data
+            const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === period);
+            if (eventIndex !== -1) {
+                // Initialize homework array if it doesn't exist
+                if (!data.schedule[dayLetter][eventIndex].homework) {
+                    data.schedule[dayLetter][eventIndex].homework = [];
+                }
+                
+                // Add the new homework
+                data.schedule[dayLetter][eventIndex].homework.push(homework);
+                
+                // Save and refresh
+                saveWeekData(currentWeek, data);
+                displayPlanner(data);
+                
+                modal.hide();
+            }
+        } else {
+            UIkit.notification({
+                message: 'Veuillez remplir tous les champs',
+                status: 'danger',
+                pos: 'top-center',
+                timeout: 3000
+            });
+        }
+    });
+}
+
+/**
+ * Update cell display to show homework
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ */
+function updateCellWithHomework(dayLetter, period, data) {
+    const cell = document.getElementById(`${dayLetter}${period}`);
+    if (cell) {
+        const event = data.schedule[dayLetter].find(e => e.period === period);
+        if (event && event.homework) {
+            cell.innerHTML = `${event.subject} - ${event.notes}<br><span class="uk-badge uk-background-secondary">Devoir</span>`;
+        }
+    }
+}
+
+/**
+ * Shows a custom menu with options for a filled cell
+ * @param {HTMLTableCellElement} cell - The table cell element
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ * @param {Object} event - The existing event
+ */
+function showCellOptionsMenu(cell, dayLetter, period, data, event) {
+    // Create a modal for the menu
+    const modalContainer = document.createElement('div');
+    
+    // Add homework list if there are any
+    let homeworkListHtml = '';
+    if (event.homework && event.homework.length > 0) {
+        homeworkListHtml = `
+            <div class="uk-margin-medium-top">
+                <h3>Devoirs</h3>
+                <ul class="uk-list uk-list-divider">
+                    ${event.homework.map(hw => 
+                        `<li><a href="#" class="homework-item" data-homework-id="${hw.id}">${hw.title}</a></li>`
+                    ).join('')}
+                </ul>
+            </div>
+        `;
+    }
+    
+    modalContainer.innerHTML = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <h2 class="uk-modal-title">${event.subject} - ${event.notes}</h2>
+            ${homeworkListHtml}
+            <div class="uk-grid-small uk-child-width-1-1 uk-grid uk-margin-medium-top">
+                <div>
+                    <button id="btn-modify" class="uk-button uk-button-primary uk-width-1-1 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Modifier</button>
+                </div>
+                <div>
+                    <button id="btn-add-homework" class="uk-button uk-button-secondary uk-width-1-1 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Ajouter un devoir</button>
+                </div>
+                <div>
+                    <button id="btn-delete" class="uk-button uk-button-danger uk-width-1-1 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Supprimer</button>
+                </div>
+                <div>
+                    <button class="uk-button uk-button-default uk-modal-close uk-width-1-1 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Annuler</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = UIkit.modal(modalContainer, { bgClose: true, center: true });
+    modal.show();
+
+    // Add event listeners for each button
+    modalContainer.querySelector('#btn-modify').addEventListener('click', () => {
+        modal.hide();
+        modifyEvent(cell, dayLetter, period, data, event);
+    });
+
+    modalContainer.querySelector('#btn-add-homework').addEventListener('click', () => {
+        modal.hide();
+        addHomework(dayLetter, period, data, event);
+    });
+
+    modalContainer.querySelector('#btn-delete').addEventListener('click', () => {
+        modal.hide();
+        UIkit.modal.confirm('Êtes-vous sûr de vouloir supprimer cet événement?')
+            .then(() => {
+                deleteEvent(dayLetter, period, data);
+            })
+            .catch(() => {
+                // User canceled the deletion
+            });
+    });
+    
+    // Add event listeners for homework items
+    const homeworkItems = modalContainer.querySelectorAll('.homework-item');
+    homeworkItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const homeworkId = item.getAttribute('data-homework-id');
+            const homework = event.homework.find(hw => hw.id === homeworkId);
+            if (homework) {
+                showHomeworkDetails(homework, dayLetter, period, data, event);
+            }
+        });
+    });
+}
+/**
+ * Show homework details in a modal
+ * @param {Object} homework - The homework object
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ * @param {Object} event - The event object
+ */
+function showHomeworkDetails(homework, dayLetter, period, data, event) {
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <button class="uk-modal-close-default" type="button" uk-close></button>
+            <h2 class="uk-modal-title">${homework.title}</h2>
+            <div class="uk-margin">
+                <div class="uk-alert">${homework.content}</div>
+            </div>
+            <div class="uk-margin-top uk-text-right">
+                <button id="btn-edit-homework" class="uk-button uk-button-primary drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Modifier</button>
+                <button id="btn-delete-homework" class="uk-button uk-button-danger drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Supprimer</button>
+                <button class="uk-button uk-button-default uk-modal-close drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Fermer</button>
+            </div>
+        </div>
+    `;
+    
+    const modal = UIkit.modal(modalContainer, { bgClose: true, center: true });
+    modal.show();
+    
+    // Add event listeners for editing and deleting homework
+    modalContainer.querySelector('#btn-edit-homework').addEventListener('click', () => {
+        modal.hide();
+        editHomework(homework, dayLetter, period, data, event);
+    });
+    
+    modalContainer.querySelector('#btn-delete-homework').addEventListener('click', () => {
+        modal.hide();
+        UIkit.modal.confirm('Êtes-vous sûr de vouloir supprimer ce devoir?')
+            .then(() => {
+                deleteHomework(homework.id, dayLetter, period, data);
+            })
+            .catch(() => {
+                // User canceled the deletion
+            });
+    });
+}
+
+/**
+ * Delete a homework item
+ * @param {string} homeworkId - The ID of the homework to delete
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ */
+function deleteHomework(homeworkId, dayLetter, period, data) {
+    // Find the event in the data
+    const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === period);
+    if (eventIndex !== -1 && data.schedule[dayLetter][eventIndex].homework) {
+        // Filter out the homework with the given ID
+        data.schedule[dayLetter][eventIndex].homework = data.schedule[dayLetter][eventIndex].homework.filter(hw => hw.id !== homeworkId);
+        
+        // Save and refresh
+        saveWeekData(currentWeek, data);
+        displayPlanner(data);
+    }
+}
+
+/**
+ * Edit an existing homework
+ * @param {Object} homework - The homework object
+ * @param {string} dayLetter - The letter representing the day of the week
+ * @param {number} period - The period of the day
+ * @param {Object} data - The week data
+ * @param {Object} event - The event object
+ */
+function editHomework(homework, dayLetter, period, data, event) {
+    // Create a modal for editing homework
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = `
+        <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
+            <h2 class="uk-modal-title">Modifier le devoir</h2>
+            <form class="uk-form-stacked">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="homework-title">Titre</label>
+                    <div class="uk-form-controls">
+                        <input id="homework-title" class="uk-input" type="text" value="${homework.title}">
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="homework-content">Contenu</label>
+                    <div class="uk-form-controls">
+                        <textarea id="homework-content" class="uk-textarea" rows="5">${homework.content}</textarea>
+                    </div>
+                </div>
+                <div class="uk-margin uk-text-right">
+                    <button type="button" class="uk-button uk-button-default uk-modal-close">Annuler</button>
+                    <button type="button" id="btn-update-homework" class="uk-button uk-button-primary">Mettre à jour</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    const modal = UIkit.modal(modalContainer, { bgClose: false, center: true });
+    modal.show();
+    
+    // Add event listener for updating the homework
+    modalContainer.querySelector('#btn-update-homework').addEventListener('click', () => {
+        const title = modalContainer.querySelector('#homework-title').value.trim();
+        const content = modalContainer.querySelector('#homework-content').value.trim();
+        
+        if (title && content) {
+            // Find the event in the data
+            const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === period);
+            if (eventIndex !== -1 && data.schedule[dayLetter][eventIndex].homework) {
+                // Find the homework in the array
+                const homeworkIndex = data.schedule[dayLetter][eventIndex].homework.findIndex(hw => hw.id === homework.id);
+                if (homeworkIndex !== -1) {
+                    // Update the homework
+                    data.schedule[dayLetter][eventIndex].homework[homeworkIndex].title = title;
+                    data.schedule[dayLetter][eventIndex].homework[homeworkIndex].content = content;
+                    
+                    // Save and refresh
+                    saveWeekData(currentWeek, data);
+                    displayPlanner(data);
+                    
+                    modal.hide();
+                }
+            }
+        } else {
+            UIkit.notification({
+                message: 'Veuillez remplir tous les champs',
+                status: 'danger',
+                pos: 'top-center',
+                timeout: 3000
+            });
+        }
+    });
+}
+
+/**
+ * Delete an existing event from the schedule.
+ * @param {string} dayLetter - The letter representing the day of the week.
+ * @param {number} period - The period of the day.
+ * @param {Object} data - The week data.
+ */
+function deleteEvent(dayLetter, period, data) {
+    if (data.schedule[dayLetter]) {
+        const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === period);
+        if (eventIndex !== -1) {
+            data.schedule[dayLetter].splice(eventIndex, 1);
+            saveWeekData(currentWeek, data);
+            displayPlanner(data);
+        }
+    }
+}
+
+
+/**
+ * Prompt the user to select the subject with a default value.
+ * @param {string} defaultSubject - The default subject to display.
  * @returns {Promise<string>} - The subject selected by the user.
  */
-function selectSubject() {
+function selectSubject(defaultSubject = '') {
     return new Promise((resolve, reject) => {
-        // Define subjects with optgroups
         const subjects = [
             {
                 label:'Veuillez choisir une option',
                 options:['Veuillez choisir une option']
+            },
+            {
+                label:'Sélection',
+                options: ['Français', 'Math']
             },
             {
                 label: 'Sciences',
@@ -331,7 +739,6 @@ function selectSubject() {
             }
         ];
 
-        // Create a unique modal container
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = `
             <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
@@ -339,7 +746,7 @@ function selectSubject() {
                 <select class="uk-select">
                     ${subjects.map(group => `
                         <optgroup label="${group.label}">
-                            ${group.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                            ${group.options.map(option => `<option value="${option}" ${option === defaultSubject ? 'selected' : ''}>${option}</option>`).join('')}
                         </optgroup>
                     `).join('')}
                 </select>
@@ -350,11 +757,9 @@ function selectSubject() {
             </div>
         `;
 
-        // Use UIkit to show the modal
         const modal = UIkit.modal(modalContainer, { bgClose: false, center: true });
         modal.show();
 
-        // Add event listener to the confirm button
         modalContainer.querySelector('.uk-button-primary').addEventListener('click', () => {
             const selectElement = modalContainer.querySelector('.uk-select');
             const subject = selectElement.value;
@@ -366,20 +771,60 @@ function selectSubject() {
             modal.hide();
         });
 
-        // Clean up the modal from the DOM after hiding
         modal.$destroy = true;
     });
 }
 
+/**
+ * Modify an existing event in the schedule.
+ * @param {HTMLTableCellElement} cell - The table cell.
+ * @param {string} dayLetter - The letter representing the day of the week.
+ * @param {number} period - The period of the day.
+ * @param {Object} data - The week data.
+ * @param {Object} event - The existing event.
+ */
+function modifyEvent(cell, dayLetter, period, data, event) {
+    selectSubject(event.subject)
+        .then(subject => {
+            if (subject) {
+                return promptForNotes(event.notes).then(notes => ({ subject, notes }));
+            }
+            throw new Error('No subject provided');
+        })
+        .then(({ subject, notes }) => {
+            if (notes) {
+                createOrUpdateEvent(dayLetter, period, subject, notes, data);
 
+                // Ask if the event should be duplicated to the next period
+                UIkit.modal.confirm('Ce cours dure t-il les deux heures?')
+                    .then(() => {
+                        // Duplicate to the next period
+                        const nextPeriod = period + 1;
+                        if (nextPeriod <= 11) { // Assuming there are 11 periods
+                            copyCell(`${dayLetter}${period}`, `${dayLetter}${nextPeriod}`, data);
+                        }
+                    })
+                    .catch(() => {
+                        // Do nothing if the user cancels
+                    });
+            } else {
+                throw new Error('No notes provided');
+            }
+        })
+        .catch(error => {
+            console.error(error.message);
+        });
+}
 
 /**
- * Prompt the user to enter notes for the event.
+ * Prompt the user to enter notes for the event with a default value.
+ * @param {string} defaultNotes - The default notes to display.
  * @returns {Promise<string>} - The notes entered by the user.
  */
-function promptForNotes() {
-    return UIkit.modal.prompt('Entrez des notes pour l\'événement:', '');
+function promptForNotes(defaultNotes = '') {
+    return UIkit.modal.prompt('Entre la salle: ', defaultNotes);
 }
+
 /**
  * Copy the event data from one cell to another.
  * @param {string} copyFrom - The ID of the cell to copy from.
@@ -473,7 +918,7 @@ function createOrUpdateEvent(dayLetter, period, subject, notes, data) {
  * @param {string} timeScheme - The time scheme identifier.
  */
 function fetchTimeScheme(timeScheme) {
-    fetch(`time${timeScheme}.json`)
+    fetch(`data/time${timeScheme}.json`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);
@@ -506,7 +951,7 @@ function displayTimeData(timeData) {
  * Load profiles from a JSON file and populate the profile selector.
  */
 function loadProfiles() {
-    fetch('profiles.json')
+    fetch('data/profiles.json')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok ' + response.statusText);

@@ -4,4 +4,5 @@
 * week/planner thing
     * rewrote basically all code
     * now acessible via a1 instead of lundi 231
-    * Item 3c
+    * dark theme
+    * better codebase
