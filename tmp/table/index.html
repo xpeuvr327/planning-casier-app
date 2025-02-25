@@ -26,17 +26,18 @@ href="https://unpkg.com/franken-ui@internal/dist/css/core.min.css"
 rel="stylesheet"
 href="https://unpkg.com/franken-ui@internal/dist/css/utilities.min.css"
 />
+<script src="https://unpkg.com/@tailwindcss/browser@4"></script>
 </head>
 <body>
     <div style="text-align: center;">
-        <h1>Agenda (:</h1>
+        <h1 class="text-3xl font-bold">Agenda (:</h1>
     </div>
 
     <div class="container">
         <div class="header">
             <button id="prevWeek" class="nav-button">Voir sem. avant</button>
             <button id="nextWeek" class="nav-button">Voir sem. prochaine</button>
-            <button id="viewAllTasks" class="uk-button uk-button-primary">Voir tous les devoirs</button>
+            <button class="nav-button" id="viewAllTasks">Voir les tâches</button>
             <div id="listContent">
                 <form id="redirectForm">
                     <select id="nameSelect" class="nav-button">
@@ -51,8 +52,6 @@ href="https://unpkg.com/franken-ui@internal/dist/css/utilities.min.css"
         <input type="file" id="uploadJson" accept=".json" class="upload-input">
         <label for="uploadJson" class="custom-file-upload" tabindex="0">Choisir un fichier de Planning</label>
         <button id="downloadUpdatedJson" class="action-button">télécharger le planning tel qu'on le voit (va aller dans "choisir un fichier planning")</button>
-        <a style="text-decoration:none" href="view.html" class="action-button">Horaires uniquement</a>
-        <a style="text-decoration:none" href="help.html" class="action-button">Aide, Infos</a>
     </div>
 
     <script src="main.js"></script>

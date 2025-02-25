@@ -731,7 +731,7 @@ function addHomework(dayLetter, period, data, event) {
         const title = modalContainer.querySelector('#homework-title').value.trim();
         const content = modalContainer.querySelector('#homework-content').value.trim();
         
-        if (title && content) {
+        if (title) {
             // Generate a unique ID for this homework
             const homeworkId = `hw_${Date.now()}`;
             
@@ -741,7 +741,6 @@ function addHomework(dayLetter, period, data, event) {
                 title: title,
                 content: content
             };
-            
             // Find the event in the data
             const eventIndex = data.schedule[dayLetter].findIndex(e => e.period === period);
             if (eventIndex !== -1) {
@@ -761,7 +760,7 @@ function addHomework(dayLetter, period, data, event) {
             }
         } else {
             UIkit.notification({
-                message: 'Veuillez remplir tous les champs',
+                message: 'Veuillez ajouter un titre',
                 status: 'danger',
                 pos: 'top-center',
                 timeout: 3000
@@ -1042,68 +1041,117 @@ function deleteEvent(dayLetter, period, data) {
  */
 function selectSubject(defaultSubject = '') {
     return new Promise((resolve, reject) => {
-        const subjects = [
-            {
-                label:'Veuillez choisir une option',
-                options:['Veuillez choisir une option']
-            },
-            {
-                label:'Sélection',
-                options: ['Français', 'Math']
-            },
-            {
-                label: 'Sciences',
-                options: ['Math', 'Info', 'Physique', 'Bio', 'Chimie']
-            },
-            {
-                label: 'Langues',
-                options: ['Français', 'Allemand', 'Italien', 'Anglais', 'Espagnol', 'Latin', 'Grec']
-            },
-            {
-                label: 'Général',
-                options: ['Histoire', 'Géo', 'Droit', 'Éco', 'Sport']
-            },
-            {
-                label: 'Arts',
-                options: ['Arts visuels','Histoire de l\'art', "Musique"]
-            }
+        // Define subjects based on college year
+        let subjects = [];
+        const collegeYear = localStorage.getItem("collegeYear");
+        
+        // Define default subjects for all years
+        const defaultSubjects = [
+            {label:'Veuillez choisir une option', options:['Veuillez choisir une option']},
+            {label:'Sélection', options:['Français','Math']},
+            {label:'Sciences', options:['Math','Info','Physique','Bio','Chimie']},
+            {label:'Langues', options:['Français','Allemand','Italien','Anglais','Espagnol','Latin','Grec']},
+            {label:'Général', options:['Histoire','Droit','Éco','Sport']},
+            {label:'Arts', options:['Arts visuels','Histoire de l\'art',"Musique"]}
         ];
-
+        
+        // Use default subjects for years 1-4
+        if (collegeYear == 1 || collegeYear == 2 || collegeYear == 3 || collegeYear == 4) {
+            subjects = defaultSubjects;
+        } else {
+            // For undefined/null/0/skip or any other value, use default subjects
+            subjects = defaultSubjects;
+        }
+        
+        // Add "Autre" option to all categories
+        subjects.push({label:'Autre', options:['Autre']});
+        
+        // Create modal container
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = `
             <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical">
                 <h2 class="uk-modal-title">Choisissez la matière</h2>
-                <select class="uk-select">
+                <select id="subject-select" class="uk-select">
                     ${subjects.map(group => `
                         <optgroup label="${group.label}">
                             ${group.options.map(option => `<option value="${option}" ${option === defaultSubject ? 'selected' : ''}>${option}</option>`).join('')}
                         </optgroup>
                     `).join('')}
                 </select>
+                <div id="other-subject-container" class="uk-margin" style="display: none;">
+                    <label class="p-0" for="other-subject">Autre matière:</label>
+                    <div class="uk-form-controls">
+                        <input id="other-subject" class="uk-input" type="text" placeholder="Entrez le nom de la matière">
+                    </div>
+                </div>
                 <p class="uk-text-right">
-                    <button class="uk-button uk-button-default uk-modal-close drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]" type="button">Annuler</button>
-                    <button class="uk-button uk-button-primary drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]" type="button">Confirmer</button>
+                    <button class="uk-button uk-button-default uk-modal-close drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] border border-solid border-slate-700" type="button">Annuler</button>
+                    <button class="uk-button uk-button-primary drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] border border-solid border-slate-700" type="button">Confirmer</button>
                 </p>
             </div>
         `;
-
+        
         const modal = UIkit.modal(modalContainer, { bgClose: false, center: true });
         modal.show();
-
-        modalContainer.querySelector('.uk-button-primary').addEventListener('click', () => {
-            const selectElement = modalContainer.querySelector('.uk-select');
-            const subject = selectElement.value;
-            if (subject) {
-                resolve(subject);
+        
+        // Handle the "Autre" option selection
+        const selectElement = modalContainer.querySelector('#subject-select');
+        const otherSubjectContainer = modalContainer.querySelector('#other-subject-container');
+        const otherSubjectInput = modalContainer.querySelector('#other-subject');
+        
+        selectElement.addEventListener('change', () => {
+            if (selectElement.value === 'Autre') {
+                otherSubjectContainer.style.display = 'block';
             } else {
-                reject(new Error('No subject selected'));
+                otherSubjectContainer.style.display = 'none';
             }
+        });
+        
+        // Check initial selection
+        if (selectElement.value === 'Autre') {
+            otherSubjectContainer.style.display = 'block';
+        }
+        
+        // Handle confirmation
+        modalContainer.querySelector('.uk-button-primary').addEventListener('click', () => {
+            const selectedValue = selectElement.value;
+            
+            if (selectedValue === 'Autre') {
+                const customSubject = otherSubjectInput.value.trim();
+                if (customSubject) {
+                    resolve(customSubject);
+                } else {
+                    UIkit.notification({
+                        message: 'Veuillez entrer le nom de la matière',
+                        status: 'danger',
+                        timeout: 3000
+                    });
+                    return;
+                }
+            } else if (selectedValue === 'Veuillez choisir une option') {
+                UIkit.notification({
+                    message: 'Veuillez sélectionner une matière',
+                    status: 'danger',
+                    timeout: 3000
+                });
+                return;
+            } else {
+                resolve(selectedValue);
+            }
+            
             modal.hide();
         });
-
+        
+        // Handle cancel
+        modalContainer.querySelector('.uk-modal-close').addEventListener('click', () => {
+            reject(new Error('Subject selection cancelled'));
+            modal.hide();
+        });
+        
         modal.$destroy = true;
     });
 }
+
 
 /**
  * Modify an existing event in the schedule.
@@ -1212,7 +1260,6 @@ function copyCell(copyFrom, copyTo, data) {
     saveWeekData(currentWeek, data);
     displayPlanner(data);
     
-    console.log(`Event copied successfully to ${toDayLetter}${toPeriod}`);
 }
 
 /**
@@ -1242,7 +1289,13 @@ function createOrUpdateEvent(dayLetter, period, subject, notes, data) {
     console.log(`Event created/updated for week ${currentWeek}:`, data);
     displayPlanner(data);
 }
-
+/**
+ * Prompt the user to enter the subject.
+ * @returns {Promise<string>} - The subject entered by the user.
+ */
+function promptForSubject() {
+    return UIkit.modal.prompt('Entrez la matière:', '');
+}
 /**
  * Fetch the time scheme data and display it in the planner.
  * @param {string} timeScheme - The time scheme identifier.

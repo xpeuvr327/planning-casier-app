@@ -22,7 +22,7 @@
         flex-wrap: wrap;
     }
 
-    .nav-button, .action-button, .custom-file-upload {
+    .nav-button, .action-button, .custom-file-upload, label{
         background-color: #3a3a3a;
         color: #ffffff;
         border: none;

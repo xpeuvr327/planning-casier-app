@@ -1,37 +1,85 @@
 {
-    "days": ["Lundi 26", "Mardi 27", "Mercredi 28", "Jeudi 1", "Vendredi 2"],
+    "days": [
+        "Lundi 26",
+        "Mardi 27",
+        "Mercredi 28",
+        "Jeudi 1",
+        "Vendredi 4"
+    ],
     "schedule": {
-      "a": [
-        {
-          "period": 1,
-          "subject": "Math",
-          "notes": "Room 101",
-          "homework": [
+        "a": [
             {
-              "id": "hw_1",
-              "title": "Exercises 1-10",
-              "content": "Complete the exercises on page 5."
+                "period": 6,
+                "subject": "Allemand",
+                "notes": "A211"
+            },
+            {
+                "period": 7,
+                "subject": "Physique",
+                "notes": "A119"
+            },
+            {
+                "period": 8,
+                "subject": "Physique",
+                "notes": "A119"
+            },
+            {
+                "period": 9,
+                "subject": "Arts visuels",
+                "notes": "B214"
+            },
+            {
+                "period": 10,
+                "subject": "Arts visuels",
+                "notes": "B214"
             }
-          ]
-        },
-        {
-          "period": 2,
-          "subject": "Science",
-          "notes": "Lab"
-        }
-      ],
-      "b": [
-        {
-          "period": 1,
-          "subject": "History",
-          "notes": "Room 202"
-        }
-      ],
-      "c": [],
-      "d": [],
-      "e": []
+        ],
+        "b": [
+            {
+                "period": 1,
+                "subject": "Français",
+                "notes": "BE16"
+            },
+            {
+                "period": 2,
+                "subject": "Français",
+                "notes": "BE16"
+            },
+            {
+                "period": 3,
+                "subject": "Math",
+                "notes": "BE17"
+            },
+            {
+                "period": 4,
+                "subject": "Math",
+                "notes": "BE17"
+            },
+            {
+                "period": 7,
+                "subject": "Chimie",
+                "notes": "C115"
+            },
+            {
+                "period": 8,
+                "subject": "Chimie",
+                "notes": "C115"
+            },
+            {
+                "period": 9,
+                "subject": "Info",
+                "notes": "B114"
+            },
+            {
+                "period": 10,
+                "subject": "Info",
+                "notes": "B114"
+            }
+        ],
+        "c": [],
+        "d": [],
+        "e": []
     },
     "totalHours": 11,
-    "timeScheme": "default"
-  }
-  
+    "timeScheme": "-scheme"
+}
