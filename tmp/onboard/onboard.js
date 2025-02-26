@@ -31,28 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'default': "Année sélectionnée : "
             }
         },
-/*         {
-            id: 'option-specifique',
-            title: 'Quelle est votre option spécifique (OS) ?',
-            options: [
-                { value: 'deu', label: 'Allemand' },
-                { value: 'eng', label: 'Anglais' },
-                { value: 'art', label: 'Arts visuels' },
-                { value: 'bio', label: 'Biologie et chimie' },
-                { value: 'eco', label: 'Économie et droit' },
-                { value: 'esp', label: 'Espagnol' },
-                { value: 'gre', label: 'Grec' },
-                { value: 'ita', label: 'Italien' },
-                { value: 'mus', label: 'Musique' },
-                { value: 'pam', label: 'Physique et application des maths' },
-                { value: 'lat', label: 'Latin' },
-            ],
-            storageKey: 'optionSpecifique',
-            feedbackMessages: {
-                'default': "Option spécifique sélectionnée."
-            },
-            condition: (answers) => answers.collegeYear && answers.collegeYear !== '0' && answers.collegeYear !== 'skip'
-        }, */
         {
             id: 'has-locker',
             title: 'Avez-vous un casier au collège ?',
@@ -68,13 +46,150 @@ document.addEventListener('DOMContentLoaded', function() {
             condition: (answers) => answers.collegeYear && answers.collegeYear !== '0' && answers.collegeYear !== 'skip'
         },
         {
-            id: 'methode-de-classement',
-            title: 'Quelle méthode de rangement utilisez vous?',
+            id: 'locker-items',
+            title: 'Quels objets stockez-vous habituellement dans votre casier ?',
             options: [
-                { value: 'cartable', label: 'Un cartable avec tout' },
-                { value: 'classeur', label: 'Des classeurs' },
-                { value: 'none', label: 'Je ne range rien' }
-            ]
+                { value: 'books', label: 'Livres' },
+                { value: 'clothes', label: 'Vêtements' },
+                { value: 'sports', label: 'Équipements sportifs' },
+                { value: 'other', label: 'Autre' }
+            ],
+            storageKey: 'lockerItems',
+            feedbackMessages: {
+                'default': "Objets stockés enregistrés."
+            },
+            condition: (answers) => answers.hasLocker === 'yes'
+        },
+        {
+            id: 'shared-locker',
+            title: 'Partagez-vous votre casier avec quelqu\'un d\'autre ?',
+            options: [
+                { value: 'yes', label: 'Oui' },
+                { value: 'no', label: 'Non' }
+            ],
+            storageKey: 'sharedLocker',
+            feedbackMessages: {
+                'yes': "Combien de personnes partagent votre casier ?",
+                'default': "Information enregistrée."
+            },
+            condition: (answers) => answers.hasLocker === 'yes'
+        },
+        {
+            id: 'shared-locker-count',
+            title: 'Combien de personnes partagent votre casier ?',
+            options: [
+                { value: 'skip', label: 'Passer' }
+            ],
+            storageKey: 'sharedLockerCount',
+            feedbackMessages: {
+                'default': "Nombre de partage enregistré."
+            },
+            condition: (answers) => answers.sharedLocker === 'yes'
+        },
+        {
+            id: 'courses',
+            title: 'Quels cours suivez-vous actuellement ?',
+            options: [
+                { value: 'math', label: 'Mathématiques' },
+                { value: 'science', label: 'Sciences' },
+                { value: 'history', label: 'Histoire' },
+                { value: 'other', label: 'Autre' }
+            ],
+            storageKey: 'courses',
+            feedbackMessages: {
+                'default': "Cours enregistrés."
+            },
+            condition: (answers) => answers.collegeYear && answers.collegeYear !== '0' && answers.collegeYear !== 'skip'
+        },
+        {
+            id: 'event-tracking',
+            title: 'Comment préférez-vous suivre vos événements ?',
+            options: [
+                { value: 'daily', label: 'Quotidien' },
+                { value: 'weekly', label: 'Hebdomadaire' },
+                { value: 'monthly', label: 'Mensuel' }
+            ],
+            storageKey: 'eventTracking',
+            feedbackMessages: {
+                'default': "Méthode de suivi enregistrée."
+            }
+        },
+        {
+            id: 'recurring-events',
+            title: 'Avez-vous des événements ou réunions récurrents ?',
+            options: [
+                { value: 'yes', label: 'Oui' },
+                { value: 'no', label: 'Non' }
+            ],
+            storageKey: 'recurringEvents',
+            feedbackMessages: {
+                'yes': "Veuillez fournir les détails des événements récurrents.",
+                'default': "Information enregistrée."
+            }
+        },
+        {
+            id: 'recurring-event-details',
+            title: 'Veuillez fournir les détails des événements récurrents.',
+            options: [
+                { value: 'skip', label: 'Passer' }
+            ],
+            storageKey: 'recurringEventDetails',
+            feedbackMessages: {
+                'default': "Détails des événements récurrents enregistrés."
+            },
+            condition: (answers) => answers.recurringEvents === 'yes'
+        },
+        {
+            id: 'notification-times',
+            title: 'Quels sont vos horaires de notification préférés pour les événements ?',
+            options: [
+                { value: '15min', label: '15 minutes avant' },
+                { value: '30min', label: '30 minutes avant' },
+                { value: '1hour', label: '1 heure avant' }
+            ],
+            storageKey: 'notificationTimes',
+            feedbackMessages: {
+                'default': "Horaires de notification enregistrés."
+            }
+        },
+        {
+            id: 'calendar-integration',
+            title: 'Souhaitez-vous intégrer votre planner avec d\'autres applications ou calendriers ?',
+            options: [
+                { value: 'google', label: 'Google Calendar' },
+                { value: 'outlook', label: 'Outlook' },
+                { value: 'none', label: 'Aucun' }
+            ],
+            storageKey: 'calendarIntegration',
+            feedbackMessages: {
+                'default': "Préférence d'intégration enregistrée."
+            }
+        },
+        {
+            id: 'notifications',
+            title: 'Souhaitez-vous activer les notifications pour les mises à jour et rappels ?',
+            options: [
+                { value: 'yes', label: 'Oui' },
+                { value: 'no', label: 'Non' }
+            ],
+            storageKey: 'notifications',
+            feedbackMessages: {
+                'yes': "Notifications activées.",
+                'default': "Préférence de notification enregistrée."
+            }
+        },
+        {
+            id: 'tips-suggestions',
+            title: 'Souhaitez-vous recevoir des conseils et suggestions pour organiser votre casier ou planifier votre emploi du temps ?',
+            options: [
+                { value: 'yes', label: 'Oui' },
+                { value: 'no', label: 'Non' }
+            ],
+            storageKey: 'tipsSuggestions',
+            feedbackMessages: {
+                'yes': "Conseils et suggestions activés.",
+                'default': "Préférence enregistrée."
+            }
         }
     ];
 
