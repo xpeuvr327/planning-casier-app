@@ -39,22 +39,7 @@ function determineCurrentWeek(weekParam) {
         return weeksBetweenDates('2024-08-24');
     }
 }
-/**
- * Load the week data from a JSON file and display it in the planner.
- * @param {number} week - The week number to load.
- */
-function loadWeek(week) {
-    fetchWeekData(week)
-        .then(data => {
-            saveWeekData(week, data);
-            console.log(`Week ${week} data loaded from JSON:`, data);
-            displayPlanner(data);
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
-            handleWeekDataError(week);
-        });
-}
+
 
 /**
  * Fetch the time scheme data and display it in the planner.
@@ -85,7 +70,7 @@ function navigateToPreviousWeek() {
 function navigateToNextWeek() {
     currentWeek++;
     loadWeek(currentWeek);
-    populateWeekSelector
+    populateWeekSelector();
 }
 
 /**
