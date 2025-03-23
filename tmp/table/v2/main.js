@@ -20,6 +20,7 @@ function initializeApp() {
     document.getElementById("uploadJson").addEventListener("change", handleFileUpload);
     document.getElementById("viewAllTasks").addEventListener("click", showAllTasks);
     document.getElementById("downloadUpdatedJson").addEventListener("click", downloadUpdatedJson);
+    document.getElementById("deleteAllWeeks").addEventListener("click", deleteAllPreviousWeeks);
     document.querySelector(".custom-file-upload").addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             document.getElementById("uploadJson").click();
@@ -55,34 +56,36 @@ function loadWeek(week) {
         });
 }
 
+/**
+ * Fetch the time scheme data and display it in the planner.
+ * @param {string} timeScheme - The time scheme identifier.
+*/
+function fetchTimeScheme(timeScheme) {
+    fetch(`data/time${timeScheme}.json`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(timeData => {
+        displayTimeData(timeData);
+    })
+    .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+    });
+}
 function navigateToPreviousWeek() {
     if (currentWeek > 1) {
         currentWeek--;
         loadWeek(currentWeek);
     }
-}
-/**
- * Fetch the time scheme data and display it in the planner.
- * @param {string} timeScheme - The time scheme identifier.
- */
-function fetchTimeScheme(timeScheme) {
-    fetch(`data/time${timeScheme}.json`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(timeData => {
-            displayTimeData(timeData);
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
-        });
+    populateWeekSelector();
 }
 function navigateToNextWeek() {
     currentWeek++;
     loadWeek(currentWeek);
+    populateWeekSelector
 }
 
 /**
@@ -107,6 +110,24 @@ function displayTimeData(timeData) {
             heureCell.setAttribute('data-time-added', 'true');
         }
     }
+}
+function deleteAllPreviousWeeks() {
+    UIkit.modal.confirm("Êtes-vous sûr de vouloir supprimer toutes les semaines précédentes?").then(() => {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith("week")) {
+                const weekNumber = parseInt(key.replace("week", ""), 10);
+                if (weekNumber < currentWeek) {
+                    localStorage.removeItem(key);
+                }
+            }
+        }
+        populateWeekSelector();
+        loadWeek(currentWeek);
+        UIkit.notification({ message: "Toutes les semaines précédentes ont été supprimées.", status: "success", pos: "top-center", timeout: 3000 });
+    }).catch(() => {
+        UIkit.notification({ message: "Suppression annulée.", status: "warning", pos: "top-center", timeout: 3000 });
+    });
 }
 /**
  * Read the uploaded file and process its content.
@@ -358,8 +379,7 @@ function getAllHomeworkTasks() {
                                     // Add each homework task
                                     event.homework.forEach(hw => {
                                         allTasks.push({
-                                            id: hw.id,
-                                            title: hw.title,
+                                            id: hw.id,title: hw.title,
                                             content: hw.content,
                                             subject: event.subject,
                                             week: weekNum,
