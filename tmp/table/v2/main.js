@@ -63,16 +63,21 @@ function fetchTimeScheme(timeScheme) {
 function navigateToPreviousWeek() {
     if (currentWeek > 1) {
         currentWeek--;
-        loadWeek(currentWeek);
+        updateQueryParamAndLoadWeek(currentWeek);
     }
     populateWeekSelector();
 }
 function navigateToNextWeek() {
     currentWeek++;
-    loadWeek(currentWeek);
+    updateQueryParamAndLoadWeek(currentWeek);
     populateWeekSelector();
 }
-
+function updateQueryParamAndLoadWeek(week) {
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set("week", week);
+    window.history.pushState({}, "", newUrl);
+    loadWeek(week);
+}
 /**
  * Handle the file upload event.
  * @param {Event} event - The file upload event.
@@ -195,7 +200,37 @@ const dayMapping = {
 const reverseDayMapping = Object.fromEntries(
     Object.entries(dayMapping).map(([key, value]) => [value, key])
 );
-
+function populateWeekSelector() {
+    const selectElement = document.getElementById("weekSelect");
+    selectElement.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Choisissez une semaine";
+    selectElement.appendChild(defaultOption);
+    const weekNumbers = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith("week")) {
+            const weekNumber = parseInt(key.replace("week", ""), 10);
+            if (!isNaN(weekNumber)) {
+                weekNumbers.push(weekNumber);
+            }
+        }
+    }
+    weekNumbers.sort((a, b) => a - b);
+    weekNumbers.forEach((weekNumber) => {
+        const option = document.createElement("option");
+        option.value = weekNumber;
+        option.textContent = `Semaine ${weekNumber}`;
+        selectElement.appendChild(option);
+    });
+    const urlParams = new URLSearchParams(window.location.search);
+    const weekParam = urlParams.get("week");
+    if (weekParam) {
+        selectElement.value = weekParam;
+    }
+    selectElement.addEventListener("change", handleWeekSelection);
+}
 /**
  * Generate new week data.
  * @param {number} week - The week number.
