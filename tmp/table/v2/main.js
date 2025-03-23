@@ -161,7 +161,9 @@ function loadWeek(week) {
     if (data) {
         displayPlanner(data);
     } else {
-        handleWeekDataError(week);
+        const newWeekData = generateNewWeekData(week);
+        saveWeekData(week, newWeekData);
+        displayPlanner(newWeekData);
     }
 }
 
@@ -173,22 +175,6 @@ function loadWeek(week) {
 function getWeekData(week) {
     const data = localStorage.getItem(`week${week}`);
     return data ? JSON.parse(data) : null;
-}
-
-/**
- * Handle errors that occur when fetching week data.
- * @param {number} week - The week number.
- */
-function handleWeekDataError(week) {
-    UIkit.modal.confirm('Voulez-vous créer une nouvelle semaine?')
-    .then(() => {
-        const newWeekData = generateNewWeekData(week);
-        saveWeekData(week, newWeekData);
-        displayPlanner(newWeekData);
-    })
-    .catch(() => {
-
-    });
 }
 
 const dayMapping = {
