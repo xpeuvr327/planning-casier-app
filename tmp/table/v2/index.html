@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda</title>
+    <link rel="stylesheet" href="styles.css">
+    <link
+  rel="stylesheet"
+  href="https://unpkg.com/franken-ui@2.0.0/dist/css/core.min.css"
+/>
+<script
+  src="https://unpkg.com/franken-ui@2.0.0/dist/js/core.iife.js"
+  type="module"
+></script>
+<script
+  src="https://unpkg.com/franken-ui@2.0.0/dist/js/icon.iife.js"
+  type="module"
+></script>
+<link
+rel="stylesheet"
+href="https://unpkg.com/franken-ui@internal/dist/css/core.min.css"
+/>
+<link
+rel="stylesheet"
+href="https://unpkg.com/franken-ui@internal/dist/css/utilities.min.css"
+/>
+<script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+<body>
+    <div style="text-align: center;">
+        <h1 class="text-3xl font-bold">Agenda v2</h1>
+    </div>
+<h2>Mois de <span class="monthSpace"></span></h2>
+    <div class="container">
+        <div class="header">
+            <button id="prevWeek" class="nav-button">Voir sem. avant</button>
+            <button id="nextWeek" class="nav-button">Voir sem. prochaine</button>
+            <button class="nav-button" id="viewAllTasks">Voir les tâches</button>
+            <div id="listContent">
+                <select id="weekSelect"class="nav-button"></select>
+            </div>
+        </div>
+        <table id="planner" class="planner-table"></table>
+        <br>
+        <input type="file" id="uploadJson" accept=".json" class="upload-input">
+        <label for="uploadJson" class="custom-file-upload" tabindex="0">Choisir un fichier de Planning</label>
+        <button id="downloadUpdatedJson" class="action-button">télécharger le planning tel qu'on le voit (va aller dans "choisir un fichier planning")</button>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

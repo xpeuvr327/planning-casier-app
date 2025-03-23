@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créateur d'Emploi du Temps</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+<body class="p-6">
+  <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-4">Créer Votre Emploi du Temps</h1>
+    <form id="timetableForm">
+      <div class="mb-4">
+        <label for="startTime" class="block text-gray-700">Heure de Début (HH:MM):</label>
+        <input type="text" id="startTime" name="startTime" class="w-full px-3 py-2 border rounded-lg" required placeholder="HH:MM">
+      </div>
+      <div class="mb-4">
+        <label for="totalPeriods" class="block text-gray-700">Nombre Total de Périodes:</label>
+        <input type="number" id="totalPeriods" name="totalPeriods" class="w-full px-3 py-2 border rounded-lg" required>
+      </div>
+      <div class="mb-4">
+        <label for="timePerPeriod" class="block text-gray-700">Durée par Période (minutes):</label>
+        <input type="number" id="timePerPeriod" name="timePerPeriod" class="w-full px-3 py-2 border rounded-lg" required>
+      </div>
+      <div class="mb-4">
+        <label for="pauseBetweenHours" class="block text-gray-700">Pause Entre les Heures (minutes):</label>
+        <input type="number" id="pauseBetweenHours" name="pauseBetweenHours" class="w-full px-3 py-2 border rounded-lg" required>
+      </div>
+      <div class="mb-4">
+        <label for="biggerPauseDuration" class="block text-gray-700">Durée de la Grande Pause (minutes):</label>
+        <input type="number" id="biggerPauseDuration" name="biggerPauseDuration" class="w-full px-3 py-2 border rounded-lg" required>
+      </div>
+      <div class="mb-4">
+        <label for="sol" class="block text-gray-700">SOL (Activité de Lecture):</label>
+        <input type="checkbox" id="sol" name="sol" class="mr-2">
+      </div>
+      <button type="button" onclick="generateTimetable()" class="w-full bg-blue-500 text-white py-2 rounded-lg">Générer l'Emploi du Temps</button>
+    </form>
+    <div id="timetableOutput" class="mt-6"></div>
+  </div>
+
+<script src="main.js"></script>
+</body>
+</html>
