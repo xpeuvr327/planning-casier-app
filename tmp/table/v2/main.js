@@ -69,9 +69,14 @@ function navigateToPreviousWeek() {
 }
 function navigateToNextWeek() {
     currentWeek++;
+    const data = getWeekData(currentWeek);
+    if (!data) {
+        duplicateWeekWithoutHomework(currentWeek - 1, currentWeek); // Duplicate the previous week
+    }
     updateQueryParamAndLoadWeek(currentWeek);
     populateWeekSelector();
 }
+
 function updateQueryParamAndLoadWeek(week) {
     const newUrl = new URL(window.location);
     newUrl.searchParams.set("week", week);
@@ -183,8 +188,8 @@ function loadWeek(week) {
     if (data) {
         displayPlanner(data);
     } else {
-        const newWeekData = generateNewWeekData(week);
-        saveWeekData(week, newWeekData);
+        duplicateWeekWithoutHomework(0, week); // Use week0 as the source template
+        const newWeekData = getWeekData(week);
         displayPlanner(newWeekData);
     }
 }
@@ -206,7 +211,19 @@ const dayMapping = {
     d: 'Jeudi',
     e: 'Vendredi'
 };
-
+function duplicateWeekWithoutHomework(sourceWeek, targetWeek) {
+    const sourceWeekData = getWeekData(sourceWeek);
+    if (sourceWeekData) {
+        const newWeekData = JSON.parse(JSON.stringify(sourceWeekData)); // Deep copy the source week data
+        newWeekData.schedule = Object.keys(newWeekData.schedule).reduce((acc, dayLetter) => {
+            acc[dayLetter] = newWeekData.schedule[dayLetter].map(event => {
+                return { ...event, homework: [] }; // Remove homework from each event
+            });
+            return acc;
+        }, {});
+        saveWeekData(targetWeek, newWeekData);
+    }
+}
 // Reverse mapping for convenience
 const reverseDayMapping = Object.fromEntries(
     Object.entries(dayMapping).map(([key, value]) => [value, key])
@@ -274,6 +291,10 @@ function generateNewWeekData(week) {
 function displayPlanner(data) {
     const table = document.getElementById('planner');
     table.innerHTML = '';
+
+    if(!data.days){
+        data.days=11;
+    }
 
     createTableHeaders(table, data.days);
     createTableData(table, data);
@@ -1387,8 +1408,6 @@ function populateWeekSelector() {
 
     selectElement.addEventListener("change", handleWeekSelection);
 }
-
-
 
 function handleWeekSelection() {
     const selectElement = document.getElementById("weekSelect");
