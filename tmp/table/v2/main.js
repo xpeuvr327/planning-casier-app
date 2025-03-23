@@ -103,6 +103,7 @@ function displayTimeData(timeData) {
 }
 function deleteAllPreviousWeeks() {
     UIkit.modal.confirm("Êtes-vous sûr de vouloir supprimer toutes les semaines précédentes?").then(() => {
+        const currentWeek = weeksBetweenDates("2024-08-24");
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key.startsWith("week")) {
@@ -114,9 +115,19 @@ function deleteAllPreviousWeeks() {
         }
         populateWeekSelector();
         loadWeek(currentWeek);
-        UIkit.notification({ message: "Toutes les semaines précédentes ont été supprimées.", status: "success", pos: "top-center", timeout: 3000 });
+        UIkit.notification({
+            message: "Toutes les semaines précédentes ont été supprimées.",
+            status: "success",
+            pos: "top-center",
+            timeout: 3000
+        });
     }).catch(() => {
-        UIkit.notification({ message: "Suppression annulée.", status: "warning", pos: "top-center", timeout: 3000 });
+        UIkit.notification({
+            message: "Suppression annulée.",
+            status: "warning",
+            pos: "top-center",
+            timeout: 3000
+        });
     });
 }
 /**
@@ -162,7 +173,7 @@ function weeksBetweenDates(date) {
     console.log(diffWeeks);
     return diffWeeks;
 }
-
+    
 /**
  * Load the week data from local storage and display it in the planner.
  * @param {number} week - The week number to load.
