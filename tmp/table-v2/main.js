@@ -1222,7 +1222,7 @@ function selectSubject(defaultSubject = '') {
 
         // Handle cancel
         modalContainer.querySelector('.uk-modal-close').addEventListener('click', () => {
-            reject(new Error('Subject selection cancelled'));
+            reject(new Error('Subject selection cancelledf'));
             modal.hide();
         });
 
@@ -1370,6 +1370,9 @@ function createOrUpdateEvent(dayLetter, period, subject, notes, data) {
  * Load the list of weeks and populate them
  */
 function populateWeekSelector() {
+    if (!document.getElementById("weekSelect")){
+        return
+    }
     const selectElement = document.getElementById("weekSelect");
     selectElement.innerHTML = "";
     const defaultOption = document.createElement("option");
