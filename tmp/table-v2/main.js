@@ -189,8 +189,11 @@ function loadWeek(week) {
         displayPlanner(data);
     } else {
         duplicateWeekWithoutHomework(0, week); // Use week0 as the source template
-        const newWeekData = getWeekData(week);
-        displayPlanner(newWeekData);
+        
+        console.log(duplicateWeekWithoutHomework(0, week));
+        
+        const fff = generateNewWeekData(week);
+        displayPlanner(fff);
     }
 }
 
@@ -203,6 +206,7 @@ function getWeekData(week) {
     const data = localStorage.getItem(`week${week}`);
     return data ? JSON.parse(data) : null;
 }
+
 
 const dayMapping = {
     a: 'Lundi',
@@ -289,20 +293,20 @@ function generateNewWeekData(week) {
  * @param {Object} data - The week data.
  */
 function displayPlanner(data) {
-    const table = document.getElementById('planner');
-    table.innerHTML = '';
-
-    if(!data.days){
-        data.days=11;
+    if (!data) {
+        console.error("Data is null or undefined");
+        return;
     }
-
+    console.log("Data being passed to displayPlanner:", data);
+    const table = document.getElementById("planner");
+    table.innerHTML = "";
     createTableHeaders(table, data.days);
     createTableData(table, data);
-
     if (data.timeScheme) {
         fetchTimeScheme(data.timeScheme);
     }
 }
+
 
 /**
  * Create the table headers.
